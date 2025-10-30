@@ -1,15 +1,14 @@
-// index.js — original logic preserved + sessionId + fingerprint + Upstash REST (no npm)
+// index.js — WITHOUT FINGERPRINT SYSTEM
 const axios = require('axios');
 const crypto = require('crypto');
 
 // env
 const API_KEY = process.env.API_KEY;
-const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL; // e.g. https://polished-lamb-16856.upstash.io
+const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
 // ---------------- Redis (Upstash REST) helper functions ----------------
 async function redisSet(key, value, expireSeconds) {
-  // value must be URL-encoded
   const v = encodeURIComponent(typeof value === 'string' ? value : JSON.stringify(value));
   const setUrl = `${UPSTASH_REDIS_REST_URL}/set/${key}/${v}`;
   await fetch(setUrl, {
@@ -29,10 +28,8 @@ async function redisGet(key) {
   const url = `${UPSTASH_REDIS_REST_URL}/get/${key}`;
   const r = await fetch(url, { headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` } });
   const j = await r.json();
-  // Upstash returns { result: "<value>" } or { result: null }
   if (!j || j.result === null || typeof j.result === 'undefined') return null;
   try {
-    // try parse JSON, otherwise decode
     const decoded = decodeURIComponent(j.result);
     return JSON.parse(decoded);
   } catch (e) {
@@ -44,24 +41,12 @@ async function redisDel(key) {
   const url = `${UPSTASH_REDIS_REST_URL}/del/${key}`;
   const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` } });
   const j = await r.json();
-  return j; // { result: 1 } etc.
+  return j;
 }
 // ------------------------------------------------------------------------
 
 function randHex(len = 16) {
   return crypto.randomBytes(len).toString('hex');
-}
-
-function getIp(req) {
-  return (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim() || 'unknown';
-}
-function getUserAgent(req) {
-  return req.headers['user-agent'] || 'unknown';
-}
-function fingerprintFor(req) {
-  const ip = getIp(req);
-  const ua = getUserAgent(req);
-  return crypto.createHash('sha256').update(ip + '|' + ua).digest('hex');
 }
 
 function getSessionIdFromReq(req) {
@@ -72,18 +57,18 @@ function getSessionIdFromReq(req) {
   }
   return null;
 }
+
 function setSessionCookie(res, sessionId) {
-  // NOTE: Secure flag requires HTTPS. On localhost testing remove Secure if needed.
   res.setHeader('Set-Cookie', `sessionId=${sessionId}; HttpOnly; Secure; SameSite=Lax; Path=/`);
 }
 
 function generateTokenValue() {
-  return randHex(24); // longer token
+  return randHex(24);
 }
 
 // ---------------- main handler ----------------
 module.exports = async (req, res) => {
-  // CORS (keeps same as original)
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -104,24 +89,22 @@ module.exports = async (req, res) => {
       });
     }
 
-    // -------------- token endpoint (create token + session cookie) --------------
+    // -------------- token endpoint (SIMPLIFIED - NO FINGERPRINT) --------------
     if (path === 'getToken') {
-      // ensure sessionId cookie exists; if not create
       let sessionId = getSessionIdFromReq(req);
       if (!sessionId) {
         sessionId = randHex(12);
         setSessionCookie(res, sessionId);
       }
 
-      const fingerprint = fingerprintFor(req);
       const token = generateTokenValue();
-      // store token -> { sessionId, fingerprint } with TTL 900s (15 min)
-      await redisSet(`token:${token}`, { sessionId, fingerprint }, 900);
+      // store token -> { sessionId } with TTL 900s (15 min) - NO FINGERPRINT
+      await redisSet(`token:${token}`, { sessionId }, 900);
 
       return res.json({ success: true, token, sessionId, expiresIn: 900 });
     }
 
-    // -------------- For protected routes: verify token using session + fingerprint --------------
+    // -------------- For protected routes: verify token using session ONLY --------------
     const protectedPaths = ['getNumber', 'getOtp', 'cancelNumber'];
     if (protectedPaths.includes(path)) {
       // require session cookie
@@ -138,14 +121,13 @@ module.exports = async (req, res) => {
       const token = authHeader.replace('Bearer ', '').trim();
 
       const stored = await redisGet(`token:${token}`);
-      if (!stored || !stored.sessionId || !stored.fingerprint) {
+      if (!stored || !stored.sessionId) {
         return res.status(403).json({ success: false, error: 'Invalid or expired token' });
       }
 
-      // compare sessionId & fingerprint
-      const fingerprint = fingerprintFor(req);
-      if (stored.sessionId !== sessionId || stored.fingerprint !== fingerprint) {
-        return res.status(403).json({ success: false, error: 'Token does not match session or fingerprint' });
+      // compare sessionId ONLY - NO FINGERPRINT CHECK
+      if (stored.sessionId !== sessionId) {
+        return res.status(403).json({ success: false, error: 'Token does not match session' });
       }
 
       // token is valid -> consume (delete)
