@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FirexOTP - Philippines WhatsApp Numbers</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    
+    <style>
+        /* All your existing CSS remains exactly same */
+        
+        /* New Styles for Low Balance Popup */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .popup-content {
+            background: var(--glass);
+            border-radius: 15px;
+            padding: 30px;
+            border: var(--cyber-border);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .popup-title {
+            color: var(--warning);
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .popup-message {
+            color: #c7d2fe;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .price-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--warning), var(--danger));
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin: 10px 0;
+            color: black;
+        }
+
+        /* Auto-refresh indicator */
+        .auto-refresh-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(0, 162, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid var(--info);
+        }
+
+        .auto-refresh-indicator i {
+            color: var(--info);
+        }
+
+        /* Balance warning */
+        .balance-warning {
+            color: var(--warning);
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        /* Rest of your existing CSS remains exactly same */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #00f3ff;
+            --secondary: #ff00e6;
+            --accent: #7700ff;
+            --success: #00ff9d;
+            --danger: #ff0040;
+            --warning: #ffd166;
+            --info: #00a2ff;
+            --dark: #0a0a12;
+            --darker: #050508;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glow: rgba(0, 243, 255, 0.3);
+            --cyber-border: 1px solid rgba(0, 243, 255, 0.3);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 50%, #0f0f1a 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 15px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Cyber Grid Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2;
+            opacity: 0.3;
+        }
+
+        /* Animated Background */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 243, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 0, 230, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(119, 0, 255, 0.05) 0%, transparent 50%);
+            z-index: -1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(1deg); }
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        /* Header Styles */
+        header {
+            text-align: center;
+            padding: 25px 15px;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .logo i {
+            font-size: 2.2rem;
+            color: var(--primary);
+            text-shadow: 0 0 20px var(--primary);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px var(--primary); }
+            to { text-shadow: 0 0 20px var(--primary), 0 0 30px var(--secondary); }
+        }
+
+        .logo h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+            text-shadow: 0 0 30px rgba(119, 0, 255, 0.5);
+            position: relative;
+        }
+
+        .logo h1::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+
+        .tagline {
+            font-size: 1rem;
+            color: #c7d2fe;
+            margin-bottom: 12px;
+            font-weight: 300;
+        }
+
+        .service-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--success), var(--info));
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: 600;
+            margin-top: 12px;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+            border: var(--cyber-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .service-badge:hover::before {
+            left: 100%;
+        }
+
+        /* Glass Card Styles */
+        .card {
+            background: var(--glass);
+            border-radius: 15px;
+            padding: 25px 20px;
+            backdrop-filter: blur(20px);
+            border: var(--cyber-border);
+            margin-bottom: 25px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .card:hover::before {
+            left: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 15px 40px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: var(--cyber-border);
+        }
+
+        .card-header i {
+            font-size: 1.6rem;
+            color: var(--primary);
+            text-shadow: 0 0 15px var(--primary);
+        }
+
+        .card-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #fff, #c7d2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Form Inputs */
+        .form-input {
+            width: 100%;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            border: var(--cyber-border);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px var(--glow);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 18px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: black;
+            box-shadow: 0 5px 20px var(--glow);
+            border: var(--cyber-border);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px var(--glow);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #00c97a);
+            color: black;
+            box-shadow: 0 5px 20px rgba(0, 255, 157, 0.3);
+            border: var(--cyber-border);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #00c97a, var(--success));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 255, 157, 0.4);
+            color: black;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--info), #0088cc);
+            color: white;
+            box-shadow: 0 5px 20px rgba(0, 162, 255, 0.3);
+            border: var(--cyber-border);
+        }
+
+        .btn-info:hover {
+            background: linear-gradient(135deg, #0088cc, var(--info));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 162, 255, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #ffb700);
+            color: black;
+            box-shadow: 0 5px 20px rgba(255, 209, 102, 0.3);
+            border: var(--cyber-border);
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #ffb700, var(--warning));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(255, 209, 102, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #e6003c);
+            color: white;
+            box-shadow: 0 5px 20px rgba(255, 0, 64, 0.3);
+            border: var(--cyber-border);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #e6003c, var(--danger));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(255, 0, 64, 0.4);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Wallet Section */
+        .wallet-balance {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--success);
+            text-shadow: 0 0 20px var(--success);
+        }
+
+        .wallet-label {
+            text-align: center;
+            color: #c7d2fe;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* User Info */
+        .user-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: var(--cyber-border);
+        }
+
+        .user-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .user-email {
+            color: #c7d2fe;
+            font-size: 0.9rem;
+        }
+
+        /* Result Areas */
+        .result-area {
+            margin-top: 20px;
+            padding: 25px 20px;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            display: none;
+            border: var(--cyber-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .result-area.active {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: var(--cyber-border);
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #c7d2fe;
+            font-size: 1rem;
+            min-width: 120px;
+        }
+
+        .result-value {
+            font-weight: 500;
+            color: white;
+            word-break: break-all;
+            text-align: right;
+            flex: 1;
+            font-size: 1rem;
+        }
+
+        /* Timer Styles */
+        .timer {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 25px 0;
+            color: var(--warning);
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            border: var(--cyber-border);
+            box-shadow: 0 0 20px rgba(255, 209, 102, 0.2);
+            text-shadow: 0 0 10px rgba(255, 209, 102, 0.5);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Action Buttons Grid */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            border: var(--cyber-border);
+        }
+
+        .status-success {
+            background: rgba(0, 255, 157, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+        }
+
+        .status-error {
+            background: rgba(255, 0, 64, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            box-shadow: 0 0 20px rgba(255, 0, 64, 0.2);
+        }
+
+        .status-info {
+            background: rgba(0, 162, 255, 0.2);
+            color: var(--info);
+            border: 1px solid var(--info);
+            box-shadow: 0 0 20px rgba(0, 162, 255, 0.2);
+        }
+
+        /* Loader */
+        .loader {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 25px 0;
+            margin-top: 40px;
+            border-top: var(--cyber-border);
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* Instructions */
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px 20px;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+            border: var(--cyber-border);
+        }
+
+        .instructions h3 {
+            margin-bottom: 18px;
+            color: var(--primary);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 12px;
+            line-height: 1.5;
+            color: #c7d2fe;
+        }
+
+        /* API Status */
+        .api-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .status-indicator.offline {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* OTP Response Area */
+        .otp-response-area {
+            background: rgba(0, 255, 157, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .otp-response-title {
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .otp-response-data {
+            color: white;
+            word-break: break-all;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            border: var(--cyber-border);
+            min-height: 80px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            
+            .card {
+                padding: 20px 15px;
+                margin-bottom: 20px;
+            }
+            
+            .btn {
+                padding: 16px 20px;
+                font-size: 1rem;
+            }
+            
+            .timer {
+                font-size: 1.8rem;
+                padding: 18px;
+            }
+            
+            .action-buttons {
+                gap: 12px;
+            }
+            
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .result-value {
+                text-align: left;
+                width: 100%;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 360px) {
+            .logo h1 {
+                font-size: 1.8rem;
+            }
+            
+            .card-header h2 {
+                font-size: 1.2rem;
+            }
+            
+            .btn {
+                padding: 14px 18px;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Low Balance Popup -->
+    <div class="popup-overlay" id="lowBalancePopup">
+        <div class="popup-content">
+            <div class="popup-title">
+                <i class="fas fa-exclamation-triangle"></i>
+                Insufficient Balance
+            </div>
+            <div class="popup-message">
+                You don't have enough balance to get a Philippines WhatsApp number.
+            </div>
+            <div class="price-tag">
+                Price: ₹50 per number
+            </div>
+            <div class="balance-warning" id="currentBalanceDisplay">
+                Your current balance: ₹0
+            </div>
+            <button class="btn btn-warning" onclick="redirectToTelegram()">
+                <i class="fas fa-plus-circle"></i> Add Balance via Telegram
+            </button>
+            <button class="btn btn-info" onclick="closeLowBalancePopup()" style="margin-top: 10px;">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-sim-card"></i>
+                <h1>FirexOTP</h1>
+            </div>
+            <p class="tagline">Philippines WhatsApp Virtual Numbers</p>
+            <div class="service-badge">
+                <i class="fab fa-whatsapp"></i> WhatsApp Verification
+            </div>
+            <div class="api-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Checking server status...</span>
+            </div>
+        </header>
+
+        <!-- Authentication Section -->
+        <div class="card" id="authSection">
+            <div class="card-header">
+                <i class="fas fa-user"></i>
+                <h2>Account Login</h2>
+            </div>
+            
+            <div id="authMessage" class="status-message"></div>
+            
+            <div id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email Address" class="form-input">
+                <input type="password" id="loginPassword" placeholder="Password" class="form-input">
+                <button id="loginBtn" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <button id="showRegisterBtn" class="btn btn-info">
+                    <i class="fas fa-user-plus"></i> Create New Account
+                </button>
+            </div>
+            
+            <div id="registerForm" class="hidden">
+                <input type="text" id="registerName" placeholder="Full Name" class="form-input">
+                <input type="email" id="registerEmail" placeholder="Email Address" class="form-input">
+                <input type="password" id="registerPassword" placeholder="Password (min 6 characters)" class="form-input">
+                <button id="registerBtn" class="btn btn-success">
+                    <i class="fas fa-user-plus"></i> Register
+                </button>
+                <button id="showLoginBtn" class="btn btn-info">
+                    <i class="fas fa-sign-in-alt"></i> Back to Login
+                </button>
+            </div>
+        </div>
+
+        <!-- Main App Section (Visible after login) -->
+        <div id="appSection" class="hidden">
+            <!-- User Info -->
+            <div class="user-info">
+                <div class="user-name" id="userName">User Name</div>
+                <div class="user-email" id="userEmail">user@email.com</div>
+            </div>
+
+            <!-- Wallet Section -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-wallet"></i>
+                    <h2>My Wallet</h2>
+                </div>
+                <div class="wallet-label">Current Balance</div>
+                <div class="wallet-balance" id="walletBalance">₹0.00</div>
+                
+                <button id="addBalanceBtn" class="btn btn-warning">
+                    <i class="fas fa-plus-circle"></i> Add Balance via Telegram
+                </button>
+            </div>
+
+            <!-- OTP Service Section -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h2>Get Philippines WhatsApp Number</h2>
+                </div>
+                
+                <div id="statusMessage" class="status-message"></div>
+
+                <!-- Auto Refresh Indicator -->
+                <div id="autoRefreshIndicator" class="auto-refresh-indicator hidden">
+                    <i class="fas fa-sync-alt fa-spin"></i>
+                    <span>Auto-refresh active - Checking for OTP every 10 seconds</span>
+                </div>
+                
+                <button id="getNumberBtn" class="btn btn-primary">
+                    <i class="fas fa-sim-card"></i> Get Philippines WhatsApp Number (₹50)
+                </button>
+                
+                <div id="numberResult" class="result-area">
+                    <div class="result-item">
+                        <span class="result-label">Request ID:</span>
+                        <span id="numberId" class="result-value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Phone Number:</span>
+                        <span id="phoneNumber" class="result-value">-</span>
+                    </div>
+                    
+                    <div class="timer">
+                        Time Left: <span id="countdown">15:00</span>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="refreshOtpBtn" class="btn btn-success">
+                            <i class="fas fa-sync-alt"></i> Refresh OTP
+                        </button>
+                        <button id="cancelNumberBtn" class="btn btn-danger">
+                            <i class="fas fa-times-circle"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="otpResult" class="result-area">
+                    <div class="result-item">
+                        <span class="result-label">OTP Code:</span>
+                        <span id="otpCode" class="result-value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Status:</span>
+                        <span id="otpStatus" class="result-value">Waiting for OTP...</span>
+                    </div>
+                    
+                    <div class="otp-response-area">
+                        <div class="otp-response-title">API Raw Response:</div>
+                        <div id="rawApiResponse" class="otp-response-data">
+                            No response yet
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <button id="logoutBtn" class="btn btn-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> How to Use:</h3>
+            <ol>
+                <li>Create account or login with your email</li>
+                <li>Add balance via Telegram bot (₹50 per number)</li>
+                <li>Get Philippines WhatsApp number for verification</li>
+                <li>Use the number in WhatsApp and receive OTP</li>
+                <li>Auto-refresh will check for OTP every 10 seconds</li>
+                <li>Balance will be deducted only when OTP is received</li>
+                <li>Cancel or time expiry will refund your amount</li>
+            </ol>
+        </div>
+        
+        <footer>
+            <p>© 2024 FirexOTP Virtual Number Service. All rights reserved.</p>
+            <p>Secure Firebase Integration - Your data is protected</p>
+        </footer>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCp1xRyz3TyLQ54r0F2-jTvECIxaeS9cOw",
+            authDomain: "otp-seller-9b884.firebaseapp.com",
+            databaseURL: "https://otp-seller-9b884-default-rtdb.firebaseio.com",
+            projectId: "otp-seller-9b884",
+            storageBucket: "otp-seller-9b884.firebasestorage.app",
+            messagingSenderId: "34038992084",
+            appId: "1:34038992084:web:35c24153dea3d5c2c23f41"
+
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Constants
+        const NUMBER_PRICE = 50; // ₹50 per number
+        const API_BASE = '/api?path=';
+        
+        // Global Variables
+        let currentId = null;
+        let countdownTimer = null;
+        let autoRefreshTimer = null;
+        let timeLeft = 900;
+        let serverOnline = false;
+        let timerExpired = false;
+        let currentUser = null;
+        let userBalance = 0;
+        let amountReserved = false;
+
+        // DOM Elements
+        const authSection = document.getElementById('authSection');
+        const appSection = document.getElementById('appSection');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const authMessage = document.getElementById('authMessage');
+        const statusMessage = document.getElementById('statusMessage');
+        const lowBalancePopup = document.getElementById('lowBalancePopup');
+        const currentBalanceDisplay = document.getElementById('currentBalanceDisplay');
+        const autoRefreshIndicator = document.getElementById('autoRefreshIndicator');
+        
+        // Auth elements
+        const loginEmail = document.getElementById('loginEmail');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginBtn = document.getElementById('loginBtn');
+        const showRegisterBtn = document.getElementById('showRegisterBtn');
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        const registerName = document.getElementById('registerName');
+        const registerEmail = document.getElementById('registerEmail');
+        const registerPassword = document.getElementById('registerPassword');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        // App elements
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        const walletBalance = document.getElementById('walletBalance');
+        const addBalanceBtn = document.getElementById('addBalanceBtn');
+
+        // OTP elements
+        const getNumberBtn = document.getElementById('getNumberBtn');
+        const refreshOtpBtn = document.getElementById('refreshOtpBtn');
+        const cancelNumberBtn = document.getElementById('cancelNumberBtn');
+        const numberResult = document.getElementById('numberResult');
+        const otpResult = document.getElementById('otpResult');
+        const countdownElement = document.getElementById('countdown');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const rawApiResponse = document.getElementById('rawApiResponse');
+
+        // Event Listeners
+        loginBtn.addEventListener('click', loginUser);
+        registerBtn.addEventListener('click', registerUser);
+        showRegisterBtn.addEventListener('click', showRegister);
+        showLoginBtn.addEventListener('click', showLogin);
+        logoutBtn.addEventListener('click', logoutUser);
+        addBalanceBtn.addEventListener('click', redirectToTelegram);
+        getNumberBtn.addEventListener('click', getNumber);
+        refreshOtpBtn.addEventListener('click', getOtp);
+        cancelNumberBtn.addEventListener('click', cancelNumber);
+
+        // Auth Functions
+        function showRegister() {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+        }
+
+        function showLogin() {
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        }
+
+        function showAuthMessage(message, type) {
+            authMessage.textContent = message;
+            authMessage.className = 'status-message';
+            authMessage.classList.add(type === 'success' ? 'status-success' : 'status-error');
+            authMessage.style.display = 'block';
+        }
+
+        function registerUser() {
+            const name = registerName.value;
+            const email = registerEmail.value;
+            const password = registerPassword.value;
+
+            if (!name || !email || !password) {
+                showAuthMessage('Please fill all fields', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAuthMessage('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            registerBtn.innerHTML = '<div class="loader"></div> Creating Account...';
+            registerBtn.disabled = true;
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    
+                    return database.ref('users/' + user.uid).set({
+                        name: name,
+                        email: email,
+                        wallet: 0,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                })
+                .then(() => {
+                    showAuthMessage('Account created successfully!', 'success');
+                    setTimeout(() => {
+                        showLogin();
+                    }, 2000);
+                })
+                .catch((error) => {
+                    showAuthMessage('Error: ' + error.message, 'error');
+                })
+                .finally(() => {
+                    registerBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register';
+                    registerBtn.disabled = false;
+                });
+        }
+
+        function loginUser() {
+            const email = loginEmail.value;
+            const password = loginPassword.value;
+
+            if (!email || !password) {
+                showAuthMessage('Please enter email and password', 'error');
+                return;
+            }
+
+            loginBtn.innerHTML = '<div class="loader"></div> Logging in...';
+            loginBtn.disabled = true;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    showAuthMessage('Login successful!', 'success');
+                    currentUser = userCredential.user;
+                    loadUserData(currentUser);
+                })
+                .catch((error) => {
+                    showAuthMessage('Error: ' + error.message, 'error');
+                })
+                .finally(() => {
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                    loginBtn.disabled = false;
+                });
+        }
+
+        function loadUserData(user) {
+            database.ref('users/' + user.uid).once('value')
+                .then((snapshot) => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        userName.textContent = userData.name;
+                        userEmail.textContent = userData.email;
+                        userBalance = userData.wallet || 0;
+                        walletBalance.textContent = '₹' + userBalance.toFixed(2);
+                        
+                        authSection.classList.add('hidden');
+                        appSection.classList.remove('hidden');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error loading user data:', error);
+                });
+        }
+
+        function updateWalletBalance(newBalance) {
+            userBalance = newBalance;
+            walletBalance.textContent = '₹' + userBalance.toFixed(2);
+            
+            if (currentUser) {
+                database.ref('users/' + currentUser.uid + '/wallet').set(newBalance);
+            }
+        }
+
+        // Balance Check and Payment Functions
+        function checkBalanceAndGetNumber() {
+            if (userBalance < NUMBER_PRICE) {
+                showLowBalancePopup();
+                return false;
+            }
+            return true;
+        }
+
+        function showLowBalancePopup() {
+            currentBalanceDisplay.textContent = 'Your current balance: ₹' + userBalance.toFixed(2);
+            lowBalancePopup.style.display = 'flex';
+        }
+
+        function closeLowBalancePopup() {
+            lowBalancePopup.style.display = 'none';
+        }
+
+        function redirectToTelegram() {
+            window.open('https://t.me/Otp_Payment_receiver_bot', '_blank');
+            showStatus('Redirecting to Telegram bot for payment...', 'info');
+            closeLowBalancePopup();
+        }
+
+        function reserveAmount() {
+            if (userBalance >= NUMBER_PRICE && !amountReserved) {
+                const newBalance = userBalance - NUMBER_PRICE;
+                updateWalletBalance(newBalance);
+                amountReserved = true;
+                return true;
+            }
+            return false;
+        }
+
+        function refundAmount() {
+            if (amountReserved) {
+                const newBalance = userBalance + NUMBER_PRICE;
+                updateWalletBalance(newBalance);
+                amountReserved = false;
+                showStatus('Amount refunded to your wallet', 'success');
+            }
+        }
+
+        function deductAmount() {
+            if (amountReserved) {
+                // Amount already deducted during reservation
+                amountReserved = false;
+                showStatus('₹' + NUMBER_PRICE + ' deducted from your wallet', 'info');
+            }
+        }
+
+        // Auto Refresh Functions
+        function startAutoRefresh() {
+            autoRefreshIndicator.classList.remove('hidden');
+            autoRefreshTimer = setInterval(() => {
+                if (currentId && !timerExpired) {
+                    getOtp();
+                }
+            }, 10000); // Check every 10 seconds
+        }
+
+        function stopAutoRefresh() {
+            autoRefreshIndicator.classList.add('hidden');
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
+            }
+        }
+
+        // Enhanced OTP Functions with Payment Logic
+        async function getNumber() {
+            if (!serverOnline) {
+                showStatus('Server is offline. Please try again later.', 'error');
+                return;
+            }
+
+            // Check balance first
+            if (!checkBalanceAndGetNumber()) {
+                return;
+            }
+
+            // Reserve amount
+            if (!reserveAmount()) {
+                showStatus('Error reserving amount. Please try again.', 'error');
+                return;
+            }
+
+            // Show loading state
+            getNumberBtn.innerHTML = '<div class="loader"></div> Getting Number...';
+            getNumberBtn.disabled = true;
+            
+            try {
+                const response = await fetch(API_BASE + 'getNumber');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('numberId').textContent = data.id;
+                    document.getElementById('phoneNumber').textContent = data.number;
+                    numberResult.classList.add('active');
+                    otpResult.classList.add('active');
+                    
+                    currentId = data.id;
+                    timerExpired = false;
+                    
+                    refreshOtpBtn.disabled = false;
+                    cancelNumberBtn.disabled = false;
+                    
+                    startCountdown();
+                    startAutoRefresh(); // Start auto-refresh
+                    
+                    showStatus('Philippines WhatsApp number successfully obtained! ₹' + NUMBER_PRICE + ' reserved.', 'success');
+                } else {
+                    refundAmount(); // Refund if failed
+                    showStatus('Failed to get number: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error getting number:', error);
+                refundAmount(); // Refund if error
+                showStatus('Network error: ' + error.message, 'error');
+            } finally {
+                getNumberBtn.innerHTML = '<i class="fas fa-sim-card"></i> Get Philippines WhatsApp Number (₹50)';
+                getNumberBtn.disabled = false;
+            }
+        }
+        
+        async function getOtp() {
+            if (!currentId) {
+                showStatus('Please get a number first.', 'error');
+                return;
+            }
+            
+            if (timerExpired) {
+                showStatus('Timer expired. Please get a new number.', 'error');
+                return;
+            }
+            
+            if (!serverOnline) {
+                showStatus('Server is offline. Please try again later.', 'error');
+                return;
+            }
+
+            refreshOtpBtn.innerHTML = '<div class="loader"></div> Checking...';
+            refreshOtpBtn.disabled = true;
+            
+            try {
+                const response = await fetch(API_BASE + 'getOtp&id=' + encodeURIComponent(currentId));
+                const data = await response.json();
+                
+                rawApiResponse.textContent = JSON.stringify(data, null, 2);
+                rawApiResponse.style.background = 'rgba(0, 255, 157, 0.2)';
+                
+                if (data.success) {
+                    document.getElementById('otpStatus').textContent = 'API Response Received';
+                    
+                    const otpMatch = data.data && data.data.match(/\b\d{6}\b/);
+                    
+                    if (otpMatch) {
+                        const otpCode = otpMatch[0];
+                        document.getElementById('otpCode').textContent = otpCode;
+                        document.getElementById('otpStatus').textContent = 'OTP Received!';
+                        document.getElementById('otpCode').style.color = 'var(--success)';
+                        document.getElementById('otpCode').style.fontWeight = 'bold';
+                        document.getElementById('otpCode').style.fontSize = '1.2rem';
+                        
+                        // OTP Received - Deduct amount and stop everything
+                        deductAmount();
+                        stopAutoRefresh();
+                        
+                        if (countdownTimer) {
+                            clearInterval(countdownTimer);
+                            countdownElement.textContent = 'OTP Received!';
+                            countdownElement.style.color = 'var(--success)';
+                        }
+                        
+                        showStatus('OTP successfully received! ₹' + NUMBER_PRICE + ' deducted.', 'success');
+                        
+                        // Disable buttons after OTP received
+                        refreshOtpBtn.disabled = true;
+                        cancelNumberBtn.disabled = true;
+                        
+                    } else {
+                        document.getElementById('otpStatus').textContent = 'No OTP Received - ' + data.data;
+                        document.getElementById('otpStatus').style.color = 'var(--warning)';
+                        showStatus('No OTP received yet. Auto-refresh active...', 'info');
+                    }
+                } else {
+                    document.getElementById('otpStatus').textContent = 'Error: ' + (data.error || 'Unknown error');
+                    document.getElementById('otpStatus').style.color = 'var(--danger)';
+                    showStatus('Failed to check OTP: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error getting OTP:', error);
+                rawApiResponse.textContent = 'Error: ' + error.message;
+                rawApiResponse.style.background = 'rgba(255, 0, 64, 0.2)';
+                showStatus('Network error: ' + error.message, 'error');
+            } finally {
+                refreshOtpBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh OTP';
+                refreshOtpBtn.disabled = timerExpired;
+            }
+        }
+        
+        async function cancelNumber() {
+            if (!currentId) {
+                showStatus('No active number to cancel.', 'error');
+                return;
+            }
+            
+            if (timerExpired) {
+                showStatus('Timer already expired. Number is already cancelled.', 'error');
+                return;
+            }
+            
+            if (!serverOnline) {
+                showStatus('Server is offline. Please try again later.', 'error');
+                return;
+            }
+
+            cancelNumberBtn.innerHTML = '<div class="loader"></div> Cancelling...';
+            cancelNumberBtn.disabled = true;
+            
+            try {
+                const response = await fetch(API_BASE + 'cancelNumber&id=' + encodeURIComponent(currentId));
+                const data = await response.json();
+                
+                if (data.success) {
+                    refundAmount(); // Refund on cancel
+                    resetUI();
+                    showStatus('Number cancelled successfully. Amount refunded.', 'success');
+                } else {
+                    showStatus('Failed to cancel number: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error cancelling number:', error);
+                showStatus('Network error: ' + error.message, 'error');
+            } finally {
+                cancelNumberBtn.innerHTML = '<i class="fas fa-times-circle"></i> Cancel';
+                cancelNumberBtn.disabled = timerExpired;
+            }
+        }
+        
+        function resetUI() {
+            numberResult.classList.remove('active');
+            otpResult.classList.remove('active');
+            document.getElementById('numberId').textContent = '-';
+            document.getElementById('phoneNumber').textContent = '-';
+            document.getElementById('otpCode').textContent = '-';
+            document.getElementById('otpStatus').textContent = 'Waiting for OTP...';
+            document.getElementById('otpStatus').style.color = 'white';
+            rawApiResponse.textContent = 'No response yet';
+            rawApiResponse.style.background = 'rgba(0, 0, 0, 0.3)';
+            
+            stopAutoRefresh();
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+            
+            currentId = null;
+            timerExpired = false;
+            amountReserved = false;
+            
+            refreshOtpBtn.disabled = false;
+            cancelNumberBtn.disabled = false;
+        }
+        
+        function startCountdown() {
+            timeLeft = 900;
+            updateCountdownDisplay();
+            
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+            
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                updateCountdownDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    timerExpired = true;
+                    countdownElement.textContent = 'Time Expired!';
+                    countdownElement.style.color = 'var(--danger)';
+                    
+                    refreshOtpBtn.disabled = true;
+                    cancelNumberBtn.disabled = true;
+                    
+                    // Auto refund on time expiry
+                    refundAmount();
+                    stopAutoRefresh();
+                    autoCancelNumber();
+                    showStatus('Time expired. Number automatically cancelled. Amount refunded.', 'info');
+                }
+            }, 1000);
+        }
+
+        async function autoCancelNumber() {
+            if (!currentId || !serverOnline) return;
+            
+            try {
+                await fetch(API_BASE + 'cancelNumber&id=' + encodeURIComponent(currentId));
+            } catch (error) {
+                console.error('Error auto-cancelling number:', error);
+            }
+        }
+
+        function updateCountdownDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            countdownElement.textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message';
+            statusMessage.classList.add(
+                type === 'success' ? 'status-success' : 
+                type === 'error' ? 'status-error' : 'status-info'
+            );
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function logoutUser() {
+            // Refund any reserved amount on logout
+            if (amountReserved) {
+                refundAmount();
+            }
+            
+            auth.signOut()
+                .then(() => {
+                    authSection.classList.remove('hidden');
+                    appSection.classList.add('hidden');
+                    showAuthMessage('Logged out successfully', 'success');
+                    
+                    loginEmail.value = '';
+                    loginPassword.value = '';
+                    registerName.value = '';
+                    registerEmail.value = '';
+                    registerPassword.value = '';
+                    
+                    resetUI();
+                    currentUser = null;
+                    userBalance = 0;
+                })
+                .catch((error) => {
+                    console.error('Logout error:', error);
+                });
+        }
+
+        // Auth State Listener
+        auth.onAuthStateChanged((user) => {
+    if (user) {
+        loadUserData(user);
+        
+        // 🔥 YEH NAYA CODE - UID dikhane ke liye
+        setTimeout(() => {
+            if (user && user.uid) {
+                const uid = user.uid;
+                alert('🎯 YOUR GOOGLE UID FOR ADMIN:\n\n' + uid + '\n\n✓ Please copy this UID\n✓ Send to admin panel setup');
+                console.log('ADMIN UID:', uid);
+            }
+        }, 2000);
+    }
+});
+
+        // Server status check (your existing function)
+        async function checkServerStatus() {
+            try {
+                const response = await fetch(API_BASE + 'health');
+                const data = await response.json();
+                
+                if (data.status === 'OK') {
+                    serverOnline = true;
+                    statusIndicator.style.background = 'var(--success)';
+                    statusText.textContent = 'Server is online';
+                    statusText.style.color = 'var(--success)';
+                }
+            } catch (error) {
+                serverOnline = false;
+                statusIndicator.style.background = 'var(--danger)';
+                statusText.textContent = 'Server is offline';
+                statusText.style.color = 'var(--danger)';
+                console.error('Server status check failed:', error);
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', function() {
+            checkServerStatus();
+            setInterval(checkServerStatus, 30000);
+        });
+    </script>
+</body>
+</html>
