@@ -1,6 +1,7 @@
 const axios = require('axios');
 
-const API_KEY = 'g18m2iehorj978taaw4ymb9yipnqyjga';
+// 🔐 API key ab environment variable se le rahe hain
+const API_KEY = process.env.API_KEY;
 
 module.exports = async (req, res) => {
   // CORS headers
