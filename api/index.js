@@ -3,7 +3,7 @@ const API_KEY = process.env.API_KEY;
 
 module.exports = async (req, res) => {
   // CORS - SIRF YAHI CHANGE HAI
-  res.setHeader('Access-Control-Allow-Origin', 'https://yourdomain.com'); // APNI WEBSITE URL DAALO
+  res.setHeader('Access-Control-Allow-Origin', 'https://numbersellapi.vercel.app'); // APNI WEBSITE URL DAALO
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
