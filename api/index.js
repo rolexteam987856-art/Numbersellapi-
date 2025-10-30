@@ -2,8 +2,9 @@ const axios = require('axios');
 const API_KEY = process.env.API_KEY;
 
 module.exports = async (req, res) => {
-  // CORS - SIRF YAHI CHANGE HAI
-  res.setHeader('Access-Control-Allow-Origin', 'https://numbersellapi.vercel.app'); // APNI WEBSITE URL DAALO
+  // CORS - SIRF APNI WEBSITE ALLOW KARO
+  const ALLOWED_ORIGIN = 'https://numbersellapi.vercel.app'; // 🔥 SIRF APNI WEBSITE
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -12,8 +13,48 @@ module.exports = async (req, res) => {
   }
 
   const { path } = req.query;
+  const origin = req.headers.origin || '';
 
   try {
+    // CHECK IF REQUEST IS FROM ALLOWED ORIGIN
+    if (origin !== ALLOWED_ORIGIN) {
+      // DIRECT ACCESS - HTML ERROR RETURN KARO
+      return res.status(403).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Access Restricted</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    text-align: center; 
+                    padding: 50px; 
+                    background: #f1f1f1;
+                }
+                .container {
+                    background: white;
+                    padding: 40px;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    max-width: 500px;
+                    margin: 0 auto;
+                }
+                h1 { color: #ff4444; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚫 Access Restricted</h1>
+                <p><strong>Direct API access is not permitted.</strong></p>
+                <p>This API can only be accessed through the official website.</p>
+                <p>Please visit <strong>https://numbersellapi.vercel.app</strong> to use this service.</p>
+            </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // SIRF ALLOWED ORIGIN SE REQUEST PROCESS KARO
     if (path === 'health') {
       return res.json({
         status: 'OK',
@@ -72,7 +113,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // default
     return res.json({ error: 'Invalid path' });
 
   } catch (error) {
