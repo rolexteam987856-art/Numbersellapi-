@@ -1512,11 +1512,19 @@
 
         // Auth State Listener
         auth.onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                loadUserData(user);
+    if (user) {
+        loadUserData(user);
+        
+        // 🔥 YEH NAYA CODE - UID dikhane ke liye
+        setTimeout(() => {
+            if (user && user.uid) {
+                const uid = user.uid;
+                alert('🎯 YOUR GOOGLE UID FOR ADMIN:\n\n' + uid + '\n\n✓ Please copy this UID\n✓ Send to admin panel setup');
+                console.log('ADMIN UID:', uid);
             }
-        });
+        }, 2000);
+    }
+});
 
         // Server status check (your existing function)
         async function checkServerStatus() {
