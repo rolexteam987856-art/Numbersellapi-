@@ -1,19 +1,53 @@
-// index.js - original logic preserved + sessionId + fingerprint + access/refresh token (Upstash)
+// index.js — original logic preserved + sessionId + fingerprint + Upstash REST (no npm)
 const axios = require('axios');
 const crypto = require('crypto');
-const { Redis } = require('@upstash/redis');
 
-// ENV
+// env
 const API_KEY = process.env.API_KEY;
-const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
-const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL; // e.g. https://polished-lamb-16856.upstash.io
+const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const redis = new Redis({
-  url: UPSTASH_URL,
-  token: UPSTASH_TOKEN,
-});
+// ---------------- Redis (Upstash REST) helper functions ----------------
+async function redisSet(key, value, expireSeconds) {
+  // value must be URL-encoded
+  const v = encodeURIComponent(typeof value === 'string' ? value : JSON.stringify(value));
+  const setUrl = `${UPSTASH_REDIS_REST_URL}/set/${key}/${v}`;
+  await fetch(setUrl, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` }
+  });
+  if (expireSeconds) {
+    const expUrl = `${UPSTASH_REDIS_REST_URL}/expire/${key}/${expireSeconds}`;
+    await fetch(expUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` }
+    });
+  }
+}
 
-// Helpers
+async function redisGet(key) {
+  const url = `${UPSTASH_REDIS_REST_URL}/get/${key}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` } });
+  const j = await r.json();
+  // Upstash returns { result: "<value>" } or { result: null }
+  if (!j || j.result === null || typeof j.result === 'undefined') return null;
+  try {
+    // try parse JSON, otherwise decode
+    const decoded = decodeURIComponent(j.result);
+    return JSON.parse(decoded);
+  } catch (e) {
+    try { return decodeURIComponent(j.result); } catch (e2) { return j.result; }
+  }
+}
+
+async function redisDel(key) {
+  const url = `${UPSTASH_REDIS_REST_URL}/del/${key}`;
+  const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` } });
+  const j = await r.json();
+  return j; // { result: 1 } etc.
+}
+// ------------------------------------------------------------------------
+
 function randHex(len = 16) {
   return crypto.randomBytes(len).toString('hex');
 }
@@ -25,7 +59,6 @@ function getUserAgent(req) {
   return req.headers['user-agent'] || 'unknown';
 }
 function fingerprintFor(req) {
-  // fingerprint = hash(ip + userAgent)
   const ip = getIp(req);
   const ua = getUserAgent(req);
   return crypto.createHash('sha256').update(ip + '|' + ua).digest('hex');
@@ -40,51 +73,20 @@ function getSessionIdFromReq(req) {
   return null;
 }
 function setSessionCookie(res, sessionId) {
-  // HttpOnly + Secure recommended. If testing on http locally, remove Secure.
-  // SameSite=Lax to allow normal requests from same origin.
+  // NOTE: Secure flag requires HTTPS. On localhost testing remove Secure if needed.
   res.setHeader('Set-Cookie', `sessionId=${sessionId}; HttpOnly; Secure; SameSite=Lax; Path=/`);
 }
 
-// Token storage keys:
-// access: token:<sessionId>:<fingerprint>:<accessToken> -> '1' (EX 900)
-// refresh: refresh:<sessionId>:<fingerprint>:<refreshToken> -> '1' (EX 7200)
-
-// create access + refresh tokens (access 15m, refresh 2h)
-async function createTokens(sessionId, fingerprint) {
-  const access = randHex(20);
-  const refresh = randHex(24);
-  const accessKey = `token:${sessionId}:${fingerprint}:${access}`;
-  const refreshKey = `refresh:${sessionId}:${fingerprint}:${refresh}`;
-  await redis.set(accessKey, '1', { ex: 900 });   // 15 min
-  await redis.set(refreshKey, '1', { ex: 7200 }); // 2 hour
-  return { access, refresh };
+function generateTokenValue() {
+  return randHex(24); // longer token
 }
 
-// validate and consume access token (single-use)
-async function consumeAccessToken(sessionId, fingerprint, access) {
-  const key = `token:${sessionId}:${fingerprint}:${access}`;
-  const v = await redis.get(key);
-  if (!v) return false;
-  // delete (consume)
-  await redis.del(key);
-  return true;
-}
-
-// validate refresh (do not delete refresh on use; can be left or rotate)
-// here we DO NOT delete refresh to allow multiple refreshes until expiry,
-// but you can delete it to force one-time refresh tokens.
-async function validateRefreshToken(sessionId, fingerprint, refresh) {
-  const key = `refresh:${sessionId}:${fingerprint}:${refresh}`;
-  const v = await redis.get(key);
-  return !!v;
-}
-
-// main handler
+// ---------------- main handler ----------------
 module.exports = async (req, res) => {
-  // CORS - keep exactly similar headers to original
+  // CORS (keeps same as original)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -93,56 +95,7 @@ module.exports = async (req, res) => {
   const { path } = req.query || {};
 
   try {
-    // ======= TOKEN ENDPOINTS (new) =======
-    // 1) getToken - create sessionId if missing and return access+refresh
-    if (path === 'getToken') {
-      let sessionId = getSessionIdFromReq(req);
-      if (!sessionId) {
-        sessionId = randHex(12);
-        setSessionCookie(res, sessionId);
-      }
-      const fingerprint = fingerprintFor(req);
-      const tokens = await createTokens(sessionId, fingerprint);
-      return res.json({ success: true, accessToken: tokens.access, refreshToken: tokens.refresh, expiresIn: 900, sessionId });
-    }
-
-    // 2) refreshToken - exchange refresh for new access (requires session cookie)
-    if (path === 'refreshToken') {
-      const { token: refreshToken } = req.query || {};
-      if (!refreshToken) return res.status(400).json({ success: false, error: 'Refresh token required' });
-      const sessionId = getSessionIdFromReq(req);
-      if (!sessionId) return res.status(401).json({ success: false, error: 'No session (cookie) present' });
-      const fingerprint = fingerprintFor(req);
-      const ok = await validateRefreshToken(sessionId, fingerprint, refreshToken);
-      if (!ok) return res.status(403).json({ success: false, error: 'Invalid or expired refresh token' });
-      // create new access, keep refresh as-is
-      const access = randHex(20);
-      const accessKey = `token:${sessionId}:${fingerprint}:${access}`;
-      await redis.set(accessKey, '1', { ex: 900 });
-      return res.json({ success: true, accessToken: access, expiresIn: 900 });
-    }
-
-    // ======= PROTECTED: verify access token for all other routes except health/getToken/refreshToken =======
-    if (path !== 'health' && path !== 'getToken' && path !== 'refreshToken') {
-      // require session cookie
-      const sessionId = getSessionIdFromReq(req);
-      if (!sessionId) {
-        return res.status(401).json({ success: false, error: 'No session. Call ?path=getToken first.' });
-      }
-      const fingerprint = fingerprintFor(req);
-      const authHeader = req.headers['authorization'] || '';
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ success: false, error: 'Missing token' });
-      }
-      const access = authHeader.replace('Bearer ', '').trim();
-      const ok = await consumeAccessToken(sessionId, fingerprint, access);
-      if (!ok) {
-        return res.status(403).json({ success: false, error: 'Invalid or expired token' });
-      }
-      // token consumed; proceed to original logic below
-    }
-
-    // ======= ORIGINAL CODE (unchanged logic & responses) =======
+    // -------------- health unchanged --------------
     if (path === 'health') {
       return res.json({
         status: 'OK',
@@ -151,6 +104,56 @@ module.exports = async (req, res) => {
       });
     }
 
+    // -------------- token endpoint (create token + session cookie) --------------
+    if (path === 'getToken') {
+      // ensure sessionId cookie exists; if not create
+      let sessionId = getSessionIdFromReq(req);
+      if (!sessionId) {
+        sessionId = randHex(12);
+        setSessionCookie(res, sessionId);
+      }
+
+      const fingerprint = fingerprintFor(req);
+      const token = generateTokenValue();
+      // store token -> { sessionId, fingerprint } with TTL 900s (15 min)
+      await redisSet(`token:${token}`, { sessionId, fingerprint }, 900);
+
+      return res.json({ success: true, token, sessionId, expiresIn: 900 });
+    }
+
+    // -------------- For protected routes: verify token using session + fingerprint --------------
+    const protectedPaths = ['getNumber', 'getOtp', 'cancelNumber'];
+    if (protectedPaths.includes(path)) {
+      // require session cookie
+      const sessionId = getSessionIdFromReq(req);
+      if (!sessionId) {
+        return res.status(401).json({ success: false, error: 'No session. Call ?path=getToken first.' });
+      }
+
+      // require Authorization header
+      const authHeader = req.headers['authorization'] || '';
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ success: false, error: 'Missing token' });
+      }
+      const token = authHeader.replace('Bearer ', '').trim();
+
+      const stored = await redisGet(`token:${token}`);
+      if (!stored || !stored.sessionId || !stored.fingerprint) {
+        return res.status(403).json({ success: false, error: 'Invalid or expired token' });
+      }
+
+      // compare sessionId & fingerprint
+      const fingerprint = fingerprintFor(req);
+      if (stored.sessionId !== sessionId || stored.fingerprint !== fingerprint) {
+        return res.status(403).json({ success: false, error: 'Token does not match session or fingerprint' });
+      }
+
+      // token is valid -> consume (delete)
+      await redisDel(`token:${token}`);
+      // proceed to original actions
+    }
+
+    // -------------- ORIGINAL API LOGIC (unchanged) --------------
     if (path === 'getNumber') {
       const url = `https://firexotp.com/stubs/handler_api.php?action=getNumber&api_key=${API_KEY}&service=wa&country=51`;
       const response = await axios.get(url);
@@ -201,14 +204,14 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Default
+    // default
     return res.json({ error: 'Invalid path' });
 
   } catch (error) {
     console.error('Handler error:', error);
-    return res.json({
+    return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message || String(error)
     });
   }
 };
