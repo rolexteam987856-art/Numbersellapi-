@@ -23,7 +23,9 @@ module.exports = async (req, res) => {
     // If direct URL access, return funny message
     if (isDirectAccess && path && path !== 'health') {
       return res.json({
-        message: "This is not API, are you stupid? 😂",
+        message: "This is not API, are you stupid?  🎭Shayari 😂
+Log kehte hain — “Bhai tu hamesha smile karta hai!”
+Arre naam hi Happy hai, rona toh gunah hai bhaiya! 😜 😂",
         note: "Stop trying to access directly, use the website!",
         tip: "Visit: https://numbersellapi.vercel.app"
       });
