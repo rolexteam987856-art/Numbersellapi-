@@ -1511,18 +1511,10 @@
         }
 
         // Auth State Listener
-        auth.onAuthStateChanged((user) => {
+        // Auth State Listener
+auth.onAuthStateChanged((user) => {
     if (user) {
         loadUserData(user);
-        
-        // 🔥 YEH NAYA CODE - UID dikhane ke liye
-        setTimeout(() => {
-            if (user && user.uid) {
-                const uid = user.uid;
-                alert('🎯 YOUR GOOGLE UID FOR ADMIN:\n\n' + uid + '\n\n✓ Please copy this UID\n✓ Send to admin panel setup');
-                console.log('ADMIN UID:', uid);
-            }
-        }, 2000);
     }
 });
 
