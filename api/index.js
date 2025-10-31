@@ -66,13 +66,16 @@ module.exports = async (req, res) => {
         <a href="https://numbersellapi.vercel.app" target="_blank" style="text-decoration: none;">
   <button style="background-color: #00ffff; 
                  color: black; 
-                 padding: 10px 20px; 
+                 padding: 18px 36px; 
                  border: none; 
-                 border-radius: 8px; 
+                 border-radius: 12px; 
                  cursor: pointer; 
-                 font-size: 16px;"
-          onmouseover="this.style.backgroundColor='#00cccc'"
-          onmouseout="this.style.backgroundColor='#00ffff'">
+                 font-size: 22px; 
+                 font-weight: bold; 
+                 box-shadow: 0 0 15px rgba(0, 255, 255, 0.6); 
+                 transition: all 0.3s ease;"
+          onmouseover="this.style.backgroundColor='#00cccc'; this.style.boxShadow='0 0 30px rgba(0, 255, 255, 0.9)'; this.style.transform='scale(1.05)';"
+          onmouseout="this.style.backgroundColor='#00ffff'; this.style.boxShadow='0 0 15px rgba(0, 255, 255, 0.6)'; this.style.transform='scale(1)';">
     Happy Website
   </button>
 </a>
