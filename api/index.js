@@ -64,13 +64,15 @@ module.exports = async (req, res) => {
         <p>Direct API access is not allowed👍</p>
         <p>Please use the official website:</p>
         <a href="https://numbersellapi.vercel.app" target="_blank" style="text-decoration: none;">
-  <button style="background-color: #111; 
-                 color: #00ffff; 
-                 padding: 6px 12px; 
-                 border: 1px solid #00ffff; 
-                 border-radius: 6px; 
+  <button style="background-color: #00ffff; 
+                 color: black; 
+                 padding: 10px 20px; 
+                 border: none; 
+                 border-radius: 8px; 
                  cursor: pointer; 
-                 font-size: 14px;">
+                 font-size: 16px;"
+          onmouseover="this.style.backgroundColor='#00cccc'"
+          onmouseout="this.style.backgroundColor='#00ffff'">
     Happy Website
   </button>
 </a>
