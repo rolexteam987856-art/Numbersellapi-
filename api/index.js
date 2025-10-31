@@ -63,9 +63,17 @@ module.exports = async (req, res) => {
         </div>
         <p>Direct API access is not allowed👍</p>
         <p>Please use the official website:</p>
-        <a href="https://numbersellapi.vercel.app" style="color: #00ffff;">
-        https://numbersellapi.vercel.app
-        </a>
+        <a href="https://numbersellapi.vercel.app" target="_blank" style="text-decoration: none;">
+  <button style="background-color: #111; 
+                 color: #00ffff; 
+                 padding: 6px 12px; 
+                 border: 1px solid #00ffff; 
+                 border-radius: 6px; 
+                 cursor: pointer; 
+                 font-size: 14px;">
+    Happy Website
+  </button>
+</a>
     </div>
 </body>
 </html>`);
