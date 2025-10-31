@@ -1,4 +1,21 @@
 const axios = require('axios');
+const admin = require('firebase-admin');
+
+// Firebase Initialization
+try {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+    }),
+    databaseURL: "https://happy-seller-3d85b-default-rtdb.firebaseio.com"
+  });
+  console.log('Firebase initialized successfully');
+} catch (error) {
+  console.log('Firebase initialization:', error.message);
+}
+
 const API_KEY = process.env.API_KEY;
 
 module.exports = async (req, res) => {
@@ -89,7 +106,8 @@ module.exports = async (req, res) => {
       return res.json({
         status: 'OK',
         message: 'Server is running',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        firebase: 'Connected'
       });
     }
 
