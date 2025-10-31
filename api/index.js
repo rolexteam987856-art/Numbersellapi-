@@ -56,11 +56,12 @@ module.exports = async (req, res) => {
 <body>
     <div class="container">
         <h1>🚫 Access Blocked</h1>
-        <p>Direct API access is not allowed.</p>
+        <p>Direct API access is not allowed Bhai Direct Api Samajh ke ghus gaya</p>
         <div class="shayri">
             "Log kehte hain — 'Bhai tu hamesha smile karta hai!'<br>
             Arre naam hi Happy hai, rona toh gunah hai bhaiya! 😜"
         </div>
+        <p>Are you stupid 😂 this is not api👍</p>
         <p>Please use the official website:</p>
         <a href="https://numbersellapi.vercel.app" style="color: #00ffff;">
             https://numbersellapi.vercel.app
