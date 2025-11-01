@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
         </div>
         <p>Direct API access is not allowed👍</p>
         <p>Please use the official website:</p>
-        <a href="https://numbersellapi.vercel.app" target="_blank" style="text-decoration: none;">
+        <a href="https://otpal.vercel.app" target="_blank" style="text-decoration: none;">
   <button style="background-color: #00ffff; 
                  color: black; 
                  padding: 18px 36px; 
