@@ -33,8 +33,9 @@ module.exports = async (req, res) => {
   const referer = req.headers['referer'] || '';
 
   try {
-    // Check if direct access
-    const isDirectAccess = !referer.includes('numbersellapi.vercel.app') && 
+    // ✅ FIXED: Check if direct access - ONLY block if referer exists and is wrong
+    const isDirectAccess = referer && 
+                           !referer.includes('numbersellapi.vercel.app') && 
                            userAgent.includes('Mozilla');
 
     // If direct access, show HTML
@@ -101,7 +102,7 @@ module.exports = async (req, res) => {
 </html>`);
     }
 
-    // Normal API functionality
+    // ✅ REST OF YOUR CODE REMAINS EXACTLY SAME
     if (path === 'health') {
       return res.json({
         status: 'OK',
