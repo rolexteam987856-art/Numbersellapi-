@@ -33,10 +33,9 @@ module.exports = async (req, res) => {
   const referer = req.headers['referer'] || '';
 
   try {
-    // ✅ FIXED: Check if direct access - ONLY block if referer exists and is wrong
-    const isDirectAccess = referer && 
-                           !referer.includes('numbersellapi.vercel.app') && 
-                           userAgent.includes('Mozilla');
+    // ✅ PERFECT FIX: Sirf otpal.vercel.app allow, baaki sab block
+    const isDirectAccess = userAgent.includes('Mozilla') && 
+                           (!referer || !referer.includes('otpal.vercel.app'));
 
     // If direct access, show HTML
     if (isDirectAccess && path && path !== 'health') {
@@ -102,7 +101,7 @@ module.exports = async (req, res) => {
 </html>`);
     }
 
-    // ✅ REST OF YOUR CODE REMAINS EXACTLY SAME
+    // Normal API functionality
     if (path === 'health') {
       return res.json({
         status: 'OK',
